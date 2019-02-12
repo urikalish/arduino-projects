@@ -1,0 +1,56 @@
+#define TRIG_PIN  4
+#define ECHO_PIN  5
+#define LED_PIN   7
+#define RELAY_PIN 8
+#define MIN_DISTANCE 50
+#define CLEAR_TIME 10000
+
+boolean isClear;
+unsigned long clearStartTime;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(ECHO_PIN, INPUT);
+  pinMode(TRIG_PIN, OUTPUT);
+  digitalWrite(TRIG_PIN, LOW);
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
+  pinMode(RELAY_PIN, OUTPUT);
+  digitalWrite(RELAY_PIN, LOW);
+  isClear = true;
+  clearStartTime = millis(); 
+}
+
+void loop() {
+  int distance = radarPing();
+  //Serial.println(distance);
+  if (distance > MIN_DISTANCE) {
+    digitalWrite(LED_PIN, LOW);
+    if (!isClear) {
+      isClear = true;
+      clearStartTime = millis();
+    }
+  } else {
+      digitalWrite(LED_PIN, HIGH);
+      isClear = false;
+  }
+  if (isClear && ((millis() - clearStartTime) > CLEAR_TIME)) {
+    digitalWrite(RELAY_PIN, LOW);
+  } else {
+    digitalWrite(RELAY_PIN, HIGH);
+  }
+  delay(100);
+}
+
+int radarPing() {
+  long duration;
+  int distance;
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+  duration = pulseIn(ECHO_PIN, HIGH);
+  distance = duration*0.0343/2;  
+  return distance; 
+}
