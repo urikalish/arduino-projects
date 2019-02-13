@@ -1,12 +1,27 @@
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
 #define TRIG_PIN  4
 #define ECHO_PIN  5
 #define LED_PIN   7
 #define RELAY_PIN 8
-#define MIN_DISTANCE 50
-#define CLEAR_TIME 10000
 
-boolean isClear;
-unsigned long clearStartTime;
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET     4
+
+#define DISTANCE_THRESHOLD_CM 50
+#define FAR_DELAY_MILLIS 10000
+
+String line1 = "Arduino Radar  v1.0.0";
+String line2 = "--- by Uri Kalish ---";
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+boolean isFar;
+unsigned long farStartTime;
+unsigned long nearStartTime;
 
 void setup() {
   Serial.begin(9600);
@@ -19,26 +34,37 @@ void setup() {
   digitalWrite(LED_PIN, LOW);
   pinMode(RELAY_PIN, OUTPUT);
   digitalWrite(RELAY_PIN, LOW);
-  isClear = true;
-  clearStartTime = millis(); 
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;);
+  }
+  display.display();
+  display.clearDisplay();  
+  nearStartTime = millis();
+  farStartTime = millis();
+  isFar = true;
 }
 
 void loop() {
   int distance = radarPing();
   //Serial.println(distance);
-  if (distance > MIN_DISTANCE) {
-    digitalWrite(LED_BUILTIN, LOW);
-    digitalWrite(LED_PIN, LOW);
-    if (!isClear) {
-      isClear = true;
-      clearStartTime = millis();
-    }
-  } else {
+  goDisplay(distance);
+  if (distance <= DISTANCE_THRESHOLD_CM) {
     digitalWrite(LED_BUILTIN, HIGH);
     digitalWrite(LED_PIN, HIGH);
-    isClear = false;
+    if (isFar) {
+      isFar = false;
+      nearStartTime = millis();
+    }
+  } else {
+    digitalWrite(LED_BUILTIN, LOW);
+    digitalWrite(LED_PIN, LOW);
+    if (!isFar) {
+      isFar = true;
+      farStartTime = millis();
+    }
   }
-  if (isClear && ((millis() - clearStartTime) > CLEAR_TIME)) {
+  if (isFar && ((millis() - farStartTime) > FAR_DELAY_MILLIS)) {
     digitalWrite(RELAY_PIN, LOW);
   } else {
     digitalWrite(RELAY_PIN, HIGH);
@@ -57,4 +83,53 @@ int radarPing() {
   duration = pulseIn(ECHO_PIN, HIGH);
   distance = duration*0.0343/2;  
   return distance; 
+}
+
+void goDisplay(int distance) {  
+  display.clearDisplay();
+  display.setTextColor(WHITE);        
+  display.setCursor(0,0);             
+  display.setTextSize(1);
+  
+  display.println(line1);
+
+  display.println(line2);
+  
+  display.print("Total Time : ");
+  int totalTime = millis() / 1000.0;
+  String totalTimeStr = String(totalTime);
+  display.println(totalTimeStr);
+  
+  display.print("Near Time  : ");
+  if (!isFar) {
+    int nearTime = (millis() - nearStartTime) / 1000.0;
+    String nearTimeStr = String(nearTime);
+    display.println(nearTimeStr);
+  } else {
+    display.println("0");
+  }
+  
+  display.print("Far Time   : ");
+  if (isFar) {
+    int farTime = (millis() - farStartTime) / 1000.0;
+    String farTimeStr = String(farTime);
+    display.println(farTimeStr);  
+  } else {
+    display.println("0");
+  }  
+        
+  //display.setTextSize(2);
+
+  display.print("Range (cm) : ");
+  if (distance <= 2000) {
+    String distanceStr = String(distance);
+    display.println(distanceStr);
+  } else {
+    display.println("0");
+  }
+  display.println("---------------------");
+  display.println("---------------------");
+  
+  display.display();
+  //delay(100);
 }
