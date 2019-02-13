@@ -108,28 +108,28 @@ void goDisplay(int distance) {
 
   unsigned long curTime = millis();
   
-  display.print("Run Time   ");
+  display.print("Run Time ");
   //unsigned long totalTime = curTime / 1000.0;
   unsigned long totalTime = curTime;
   String totalTimeStr = String(totalTime);
   display.println(totalTimeStr);
 
-  display.print("Range (cm) ");
+  display.print("Rng/Trg  ");
+  String rngTrg = "";
   if (distance <= 2000) {
     String distanceStr = String(distance);
-    display.println(distanceStr);
+    rngTrg += distanceStr;
   } else {
-    display.println("0");
+    rngTrg += "0";
   }
-
-  display.print("Detection  ");
   if (detectTarget) {
-    display.println("YES");  
+    rngTrg += "/YES";  
   } else {
-    display.println("NO");
+    rngTrg += "/NO";  
   }
+  display.println(rngTrg);
   
-  display.print("Near/Far   ");
+  display.print("Near/Far ");
   if (!isFar) {
     unsigned long nearTime = (curTime - nearStartTime) / 1000.0;
     String nearTimeStr = String(nearTime);
@@ -142,12 +142,14 @@ void goDisplay(int distance) {
     display.println(farTimeStr);
   }
    
-  display.print("Relay      ");
+  display.print("Relay    ");
   if (isRelayOn) {
     display.println("ON");  
   } else {
     display.println("OFF");
   }
+
+  display.println("---------------------");
 
   display.println("---------------------");
    
