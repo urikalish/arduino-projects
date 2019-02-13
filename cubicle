@@ -15,7 +15,7 @@
 #define DISTANCE_THRESHOLD_CM 50
 #define FAR_DELAY_MILLIS 10000
 
-String line1 = "Arduino Radar  v1.0.0";
+String line1 = "Cubicle Radar  v1.0.0";
 String line2 = "--- by Uri Kalish ---";
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
