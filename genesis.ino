@@ -2,7 +2,6 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-#include <Time.h>
 
 #define TRIG_PIN  4
 #define ECHO_PIN  5
