@@ -19,9 +19,12 @@ String line1 = "Arduino Radar  v1.0.0";
 String line2 = "--- by Uri Kalish ---";
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+boolean detectTarget;
 boolean isFar;
-unsigned long farStartTime;
+boolean isRelayOn;
+unsigned long lastDetectTime;
 unsigned long nearStartTime;
+unsigned long farStartTime;
 
 void setup() {
   Serial.begin(9600);
@@ -33,42 +36,49 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
   pinMode(RELAY_PIN, OUTPUT);
-  digitalWrite(RELAY_PIN, LOW);
+  digitalWrite(RELAY_PIN, HIGH);
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     Serial.println(F("SSD1306 allocation failed"));
     for(;;);
   }
   display.display();
-  display.clearDisplay();  
+  display.clearDisplay();
+  lastDetectTime = millis();  
   nearStartTime = millis();
   farStartTime = millis();
-  isFar = true;
+  detectTarget = true;
+  isRelayOn = true;
+  isFar = false;
 }
 
 void loop() {
-  int distance = radarPing();
-  //Serial.println(distance);
-  goDisplay(distance);
+  int distance = radarPing();   
   if (distance <= DISTANCE_THRESHOLD_CM) {
+    detectTarget = true;
     digitalWrite(LED_BUILTIN, HIGH);
     digitalWrite(LED_PIN, HIGH);
+    lastDetectTime = millis();
     if (isFar) {
       isFar = false;
       nearStartTime = millis();
     }
   } else {
+    detectTarget = false;
     digitalWrite(LED_BUILTIN, LOW);
     digitalWrite(LED_PIN, LOW);
-    if (!isFar) {
+    if (!isFar && ((millis() - lastDetectTime) > FAR_DELAY_MILLIS)) {
       isFar = true;
       farStartTime = millis();
     }
   }
-  if (isFar && ((millis() - farStartTime) > FAR_DELAY_MILLIS)) {
+  if (isFar) {
+    isRelayOn = false;
     digitalWrite(RELAY_PIN, LOW);
   } else {
+    isRelayOn = true;
     digitalWrite(RELAY_PIN, HIGH);
   }
+  goDisplay(distance);
   delay(100);
 }
 
@@ -81,11 +91,12 @@ int radarPing() {
   delayMicroseconds(10);
   digitalWrite(TRIG_PIN, LOW);
   duration = pulseIn(ECHO_PIN, HIGH);
-  distance = duration*0.0343/2;  
+  distance = duration*0.0343/2;
+  //Serial.println(distance);   
   return distance; 
 }
 
-void goDisplay(int distance) {  
+void goDisplay(int distance) {
   display.clearDisplay();
   display.setTextColor(WHITE);        
   display.setCursor(0,0);             
@@ -94,42 +105,51 @@ void goDisplay(int distance) {
   display.println(line1);
 
   display.println(line2);
+
+  unsigned long curTime = millis();
   
-  display.print("Total Time : ");
-  int totalTime = millis() / 1000.0;
+  display.print("Run Time   ");
+  //unsigned long totalTime = curTime / 1000.0;
+  unsigned long totalTime = curTime;
   String totalTimeStr = String(totalTime);
   display.println(totalTimeStr);
-  
-  display.print("Near Time  : ");
-  if (!isFar) {
-    int nearTime = (millis() - nearStartTime) / 1000.0;
-    String nearTimeStr = String(nearTime);
-    display.println(nearTimeStr);
-  } else {
-    display.println("0");
-  }
-  
-  display.print("Far Time   : ");
-  if (isFar) {
-    int farTime = (millis() - farStartTime) / 1000.0;
-    String farTimeStr = String(farTime);
-    display.println(farTimeStr);  
-  } else {
-    display.println("0");
-  }  
-        
-  //display.setTextSize(2);
 
-  display.print("Range (cm) : ");
+  display.print("Range (cm) ");
   if (distance <= 2000) {
     String distanceStr = String(distance);
     display.println(distanceStr);
   } else {
     display.println("0");
   }
-  display.println("---------------------");
-  display.println("---------------------");
+
+  display.print("Detection  ");
+  if (detectTarget) {
+    display.println("YES");  
+  } else {
+    display.println("NO");
+  }
   
+  display.print("Near/Far   ");
+  if (!isFar) {
+    unsigned long nearTime = (curTime - nearStartTime) / 1000.0;
+    String nearTimeStr = String(nearTime);
+    display.print(nearTimeStr);
+    display.println("/0");
+  } else {  
+    display.print("0/");
+    unsigned long farTime = (curTime - farStartTime) / 1000.0;
+    String farTimeStr = String(farTime);
+    display.println(farTimeStr);
+  }
+   
+  display.print("Relay      ");
+  if (isRelayOn) {
+    display.println("ON");  
+  } else {
+    display.println("OFF");
+  }
+
+  display.println("---------------------");
+   
   display.display();
-  //delay(100);
 }
