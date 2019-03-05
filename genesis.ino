@@ -1,177 +1,100 @@
-#include <SPI.h>
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+/* Defines */
 
-#define TRIG_PIN  4
-#define ECHO_PIN  5
-#define LED_PIN   7
-#define RELAY_PIN 8
+#define LEN(x) (sizeof(x)/sizeof((x)[0]))
 
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 64
-#define OLED_RESET     4
+/* Input */
 
-#define MAX_RADAR_RANGE_CM  2200
-#define DISTANCE_THRESHOLD_CM 50
-#define FAR_DELAY_MILLIS   10000
+#define SNAKE_DRAWER_PIN 2
+#define GLASSES_DRAWER_PIN 3
+#define CORE_DRAWER_PIN 4
+#define FRAME_CHIP_PIN 5
+#define VR_DRAWER_PIN 6
+int inPins[] = {SNAKE_DRAWER_PIN, GLASSES_DRAWER_PIN, CORE_DRAWER_PIN, FRAME_CHIP_PIN, VR_DRAWER_PIN};
+String msgsToComputer[] = {"SnakeDrawerOpened", "GlassesDrawerOpened", "CoreDrawerOpened", "FrameChipRemoved", "VRDrawerOpened"};
+int inPinsStates[LEN(inPins)];
 
-#define SECS_PER_MIN  (60UL)
-#define SECS_PER_HOUR (3600UL)
-#define SECS_PER_DAY  (SECS_PER_HOUR * 24L)
-#define numberOfSeconds(_time_) (_time_ % SECS_PER_MIN)  
-#define numberOfMinutes(_time_) ((_time_ / SECS_PER_MIN) % SECS_PER_MIN) 
-#define numberOfHours(_time_) (( _time_% SECS_PER_DAY) / SECS_PER_HOUR)
-#define elapsedDays(_time_) ( _time_ / SECS_PER_DAY)
+/* Output */
 
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-boolean detectTarget;
-boolean isFar;
-boolean isRelayOn;
-unsigned long lastDetectTime;
-unsigned long nearStartTime;
-unsigned long farStartTime;
+#define LED_LIGHTS_PIN 12
+int outPins[] = {LED_LIGHTS_PIN};
+#define MSG_BLUE_LIGHTS 98 //ascii for 'b'
+#define MSG_FLASH_LIGHTS 102 //ascii for 'f'
+#define MSG_RED_LIGHTS 114 //ascii for 'r'
 
-String line1 = "Cubicle Radar  v1.0.0";
-String line2 = "--- by Uri Kalish ---";
+/* Setup */
 
 void setup() {
   Serial.begin(9600);
-  pinMode(ECHO_PIN, INPUT);
-  pinMode(TRIG_PIN, OUTPUT);
-  digitalWrite(TRIG_PIN, LOW);
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW);
-  pinMode(RELAY_PIN, OUTPUT);
-  digitalWrite(RELAY_PIN, HIGH);
-  lastDetectTime = millis();  
-  nearStartTime = millis();
-  farStartTime = millis();
-  detectTarget = true;
-  isRelayOn = true;
-  isFar = false;
-  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-    Serial.println(F("SSD1306 allocation failed"));
-    for(;;);
+  setUpInputs(); 
+  setUpOutputs();
+  while (!Serial) {
+    delay(100);
   }
-  display.display();
-  display.clearDisplay();
+  flashLights();  
 }
+
+void setUpInputs() {
+  for (int i=0; i<LEN(inPins); i++) {
+    pinMode(inPins[i], INPUT_PULLUP);
+    inPinsStates[i] = digitalRead(inPins[i]);
+  }  
+}
+
+void setUpOutputs() {
+  for (int i=0; i<LEN(outPins); i++) {
+    pinMode(outPins[i], OUTPUT);
+    digitalWrite(outPins[i], LOW);
+  }
+}
+
+void flashLights() {
+  digitalWrite(LED_LIGHTS_PIN, HIGH);
+  delay(1000);
+  digitalWrite(LED_LIGHTS_PIN, LOW);  
+}
+
+/* Loop */
 
 void loop() {
-  int distance = radarPing();   
-  if (distance <= DISTANCE_THRESHOLD_CM) {
-    detectTarget = true;
-    digitalWrite(LED_BUILTIN, HIGH);
-    digitalWrite(LED_PIN, HIGH);
-    lastDetectTime = millis();
-    if (isFar) {
-      isFar = false;
-      nearStartTime = millis();
+  //logInPinStates();
+  handleMessagesFromComputer();
+  handleInputsFromPins();
+  delay(100);
+}
+
+void handleMessagesFromComputer() {
+  if (Serial.available() > 0) {
+    int value = Serial.read();
+    if (value == MSG_BLUE_LIGHTS) {
+      digitalWrite(LED_LIGHTS_PIN, LOW);
+    } else if (value == MSG_RED_LIGHTS) {
+      digitalWrite(LED_LIGHTS_PIN, HIGH);
+    } else if (value == MSG_FLASH_LIGHTS) {
+      delay(13000);
+      for (int i=0; i<35; i++) {
+        digitalWrite(LED_LIGHTS_PIN, HIGH);
+        delay(500);
+        digitalWrite(LED_LIGHTS_PIN, LOW);
+        delay(500);    
+      }
     }
-  } else {
-    detectTarget = false;
-    digitalWrite(LED_BUILTIN, LOW);
-    digitalWrite(LED_PIN, LOW);
-    if (!isFar && ((millis() - lastDetectTime) > FAR_DELAY_MILLIS)) {
-      isFar = true;
-      farStartTime = millis();
+  }  
+}
+
+void handleInputsFromPins() {
+  for (int i=0; i<LEN(inPins); i++) {
+    int newInPinState = digitalRead(inPins[i]);
+    if ((inPinsStates[i] == HIGH) && (newInPinState == LOW)) {
+      Serial.println(msgsToComputer[i]);
     }
+    inPinsStates[i] = newInPinState;
   }
-  if (isFar) {
-    isRelayOn = false;
-    digitalWrite(RELAY_PIN, LOW);
-  } else {
-    isRelayOn = true;
-    digitalWrite(RELAY_PIN, HIGH);
-  }
-  goDisplay(distance);
-  delay(1000);
 }
 
-int radarPing() {
-  long duration;
-  int distance;
-  digitalWrite(TRIG_PIN, LOW);
-  delayMicroseconds(2);
-  digitalWrite(TRIG_PIN, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(TRIG_PIN, LOW);
-  duration = pulseIn(ECHO_PIN, HIGH);
-  distance = duration*0.0343/2;
-  //Serial.println(distance);   
-  return distance; 
-}
-
-void printDigits(byte digits){
- display.print(":");
- if (digits < 10) {
-   display.print("0");
- }
- display.print(digits, DEC);  
-}
-
-void printTime(unsigned long totalSeconds) {
-  display.print(elapsedDays(totalSeconds), DEC);  
-  printDigits(numberOfHours(totalSeconds));  
-  printDigits(numberOfMinutes(totalSeconds));
-  printDigits(numberOfSeconds(totalSeconds));  
-}
-
-void goDisplay(int distance) {
-  display.clearDisplay();
-  display.setTextColor(WHITE);        
-  display.setCursor(0,0);             
-  display.setTextSize(1);
-  
-  display.println(line1);
-
-  display.println(line2);
-
-  unsigned long curTime = millis();
-
-  display.print("RNG : ");
-  String rngTrg = "";
-  if (distance <= MAX_RADAR_RANGE_CM) {
-    String distanceStr = String(distance);
-    display.print(distanceStr);
-    display.println("cm");
-  } else {
-    display.println("---");
+void logInPinStates() {
+  for (int i=0; i<LEN(inPins); i++) {
+    Serial.print(String(digitalRead(inPins[i])));
+    Serial.print(" ");
   }
-  
-  display.print("TRG : ");
-  if (detectTarget) {
-    display.println("NEAR"); 
-  } else {
-    display.println("FAR"); 
-  }
-
-  display.print("N/F : ");
-  if (!isFar) {
-    display.print("N ");
-    printTime((curTime - nearStartTime) / 1000.0);
-    display.println();
-  } else {
-    display.print("F ");  
-    printTime((curTime - farStartTime) / 1000.0);
-    display.println();
-  }
-
-  display.print("RLY : ");
-  if (isRelayOn) {
-    display.println("ON");  
-  } else {
-    display.println("OFF");
-  }
-
-  display.println("---------------------");
-  
-  display.print("TOT : T ");
-  printTime(curTime / 1000.0);
-  display.println(); 
-     
-  display.display();
+  Serial.println("");  
 }
