@@ -12,11 +12,17 @@
 #define SCREEN_HEIGHT 64
 #define OLED_RESET     4
 
+#define MAX_RADAR_RANGE_CM  2200
 #define DISTANCE_THRESHOLD_CM 50
-#define FAR_DELAY_MILLIS 10000
+#define FAR_DELAY_MILLIS   10000
 
-String line1 = "Cubicle Radar  v1.0.0";
-String line2 = "--- by Uri Kalish ---";
+#define SECS_PER_MIN  (60UL)
+#define SECS_PER_HOUR (3600UL)
+#define SECS_PER_DAY  (SECS_PER_HOUR * 24L)
+#define numberOfSeconds(_time_) (_time_ % SECS_PER_MIN)  
+#define numberOfMinutes(_time_) ((_time_ / SECS_PER_MIN) % SECS_PER_MIN) 
+#define numberOfHours(_time_) (( _time_% SECS_PER_DAY) / SECS_PER_HOUR)
+#define elapsedDays(_time_) ( _time_ / SECS_PER_DAY)
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 boolean detectTarget;
@@ -25,6 +31,9 @@ boolean isRelayOn;
 unsigned long lastDetectTime;
 unsigned long nearStartTime;
 unsigned long farStartTime;
+
+String line1 = "Cubicle Radar  v1.0.0";
+String line2 = "--- by Uri Kalish ---";
 
 void setup() {
   Serial.begin(9600);
@@ -37,18 +46,18 @@ void setup() {
   digitalWrite(LED_PIN, LOW);
   pinMode(RELAY_PIN, OUTPUT);
   digitalWrite(RELAY_PIN, HIGH);
-  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-    Serial.println(F("SSD1306 allocation failed"));
-    for(;;);
-  }
-  display.display();
-  display.clearDisplay();
   lastDetectTime = millis();  
   nearStartTime = millis();
   farStartTime = millis();
   detectTarget = true;
   isRelayOn = true;
   isFar = false;
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;);
+  }
+  display.display();
+  display.clearDisplay();
 }
 
 void loop() {
@@ -79,7 +88,7 @@ void loop() {
     digitalWrite(RELAY_PIN, HIGH);
   }
   goDisplay(distance);
-  delay(100);
+  delay(1000);
 }
 
 int radarPing() {
@@ -96,6 +105,21 @@ int radarPing() {
   return distance; 
 }
 
+void printDigits(byte digits){
+ display.print(":");
+ if (digits < 10) {
+   display.print("0");
+ }
+ display.print(digits, DEC);  
+}
+
+void printTime(unsigned long totalSeconds) {
+  display.print(elapsedDays(totalSeconds), DEC);  
+  printDigits(numberOfHours(totalSeconds));  
+  printDigits(numberOfMinutes(totalSeconds));
+  printDigits(numberOfSeconds(totalSeconds));  
+}
+
 void goDisplay(int distance) {
   display.clearDisplay();
   display.setTextColor(WHITE);        
@@ -107,42 +131,36 @@ void goDisplay(int distance) {
   display.println(line2);
 
   unsigned long curTime = millis();
-  
-  display.print("Run Time ");
-  //unsigned long totalTime = curTime / 1000.0;
-  unsigned long totalTime = curTime;
-  String totalTimeStr = String(totalTime);
-  display.println(totalTimeStr);
 
-  display.print("Rng/Trg  ");
+  display.print("RNG : ");
   String rngTrg = "";
-  if (distance <= 2000) {
+  if (distance <= MAX_RADAR_RANGE_CM) {
     String distanceStr = String(distance);
-    rngTrg += distanceStr;
+    display.print(distanceStr);
+    display.println("cm");
   } else {
-    rngTrg += "0";
+    display.println("---");
   }
-  if (detectTarget) {
-    rngTrg += "/YES";  
-  } else {
-    rngTrg += "/NO";  
-  }
-  display.println(rngTrg);
   
-  display.print("Near/Far ");
-  if (!isFar) {
-    unsigned long nearTime = (curTime - nearStartTime) / 1000.0;
-    String nearTimeStr = String(nearTime);
-    display.print(nearTimeStr);
-    display.println("/0");
-  } else {  
-    display.print("0/");
-    unsigned long farTime = (curTime - farStartTime) / 1000.0;
-    String farTimeStr = String(farTime);
-    display.println(farTimeStr);
+  display.print("TRG : ");
+  if (detectTarget) {
+    display.println("NEAR"); 
+  } else {
+    display.println("FAR"); 
   }
-   
-  display.print("Relay    ");
+
+  display.print("N/F : ");
+  if (!isFar) {
+    display.print("N ");
+    printTime((curTime - nearStartTime) / 1000.0);
+    display.println();
+  } else {
+    display.print("F ");  
+    printTime((curTime - farStartTime) / 1000.0);
+    display.println();
+  }
+
+  display.print("RLY : ");
   if (isRelayOn) {
     display.println("ON");  
   } else {
@@ -150,8 +168,10 @@ void goDisplay(int distance) {
   }
 
   display.println("---------------------");
-
-  display.println("---------------------");
-   
+  
+  display.print("TOT : T ");
+  printTime(curTime / 1000.0);
+  display.println(); 
+     
   display.display();
 }
