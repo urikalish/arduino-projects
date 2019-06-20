@@ -25,7 +25,7 @@
 * digitalWrite(pinNumber, HIGH|LOW)
 * tone(speakerPinNumber, frequency, \[durationMilliseconds\])
 * noTone(pinNumber)
-* Workshop - Led Speaker - [Circuit](https://raw.githubusercontent.com/urikalish/arduino-projects/master/Lessons/Lesson01/LedSpeaker.png) | [Code](https://raw.githubusercontent.com/urikalish/arduino-projects/master/Lessons/Lesson01/LedSpeaker.ino)
+* Workshop - Led Speaker - [Circuit](https://raw.githubusercontent.com/urikalish/arduino-projects/master/projects/work/lessons/lesson01/LedSpeaker.png) | [Code](https://raw.githubusercontent.com/urikalish/arduino-projects/master/projects/work/lessons/lesson01/LedSpeaker.ino)
 
 ## Lesson #2 - Radar Music - 24/02/19
 * Radar sensor
@@ -35,7 +35,7 @@
 * newVal = constrain(val, minVal, maxVal)
 * newVal = map(val, srcMin, srcMax, dstMin, dstMax)
 * delayMicroseconds(microseconds)
-* Workshop - Radar Music - [Circuit](https://raw.githubusercontent.com/urikalish/arduino-projects/master/Lessons/Lesson02/RadarMusic.png) | [Code](https://raw.githubusercontent.com/urikalish/arduino-projects/master/Lessons/Lesson02/RadarMusic.ino)
+* Workshop - Radar Music - [Circuit](https://raw.githubusercontent.com/urikalish/arduino-projects/master/projects/work/lessons/lesson02/RadarMusic.png) | [Code](https://raw.githubusercontent.com/urikalish/arduino-projects/master/projects/work/lessons/lesson02/RadarMusic.ino)
 
 ## Lesson #3 - Knob Servo - 10/03/19
 * Potentiometers
@@ -46,7 +46,7 @@
 * analogWrite(pwmPinNumber, val) // 0-255
 * servo.attach(servoPinNumber)
 * servo.write(angle) // 0-180
-* Workshop - Knob Servo - [Circuit](https://raw.githubusercontent.com/urikalish/arduino-projects/master/Lessons/Lesson03/KnobServo.png) | [Code](https://raw.githubusercontent.com/urikalish/arduino-projects/master/Lessons/Lesson03/KnobServo.ino)
+* Workshop - Knob Servo - [Circuit](https://raw.githubusercontent.com/urikalish/arduino-projects/master/projects/work/lessons/lesson03/KnobServo.png) | [Code](https://raw.githubusercontent.com/urikalish/arduino-projects/master/projects/work/lessons/lesson03/KnobServo.ino)
 
 ## Lesson #4 - Button Pullup - 24/03/19
 * Serial resistors
@@ -57,12 +57,12 @@
 * Interrups
 * attachInterrupt(digitalPinToInterrupt(interruptPin), isrFunc, CHANGE|RISING|FALLING|LOW|HIGH);
 * Volatile variable
-* Workshop - Button No Pullup - [Circuit](https://raw.githubusercontent.com/urikalish/arduino-projects/master/Lessons/Lesson04/ButtonNoPullup.png) | [Code](https://raw.githubusercontent.com/urikalish/arduino-projects/master/Lessons/Lesson04/ButtonNoPullup.ino)
-* Workshop - Button with Pullup - [Circuit](https://raw.githubusercontent.com/urikalish/arduino-projects/master/Lessons/Lesson04/ButtonPullup.png) | [Code](https://raw.githubusercontent.com/urikalish/arduino-projects/master/Lessons/Lesson04/ButtonPullup.ino)
-* Workshop - Button with Pullup and Interrupt - [Code](https://raw.githubusercontent.com/urikalish/arduino-projects/master/Lessons/Lesson04/ButtonPullupInterrupt.ino)
+* Workshop - Button No Pullup - [Circuit](https://raw.githubusercontent.com/urikalish/arduino-projects/master/projects/work/lessons/lesson04/ButtonNoPullup.png) | [Code](https://raw.githubusercontent.com/urikalish/arduino-projects/master/projects/work/lessons/lesson04/ButtonNoPullup.ino)
+* Workshop - Button with Pullup - [Circuit](https://raw.githubusercontent.com/urikalish/arduino-projects/master/projects/work/lessons/lesson04/ButtonPullup.png) | [Code](https://raw.githubusercontent.com/urikalish/arduino-projects/master/projects/work/lessons/lesson04/ButtonPullup.ino)
+* Workshop - Button with Pullup and Interrupt - [Code](https://raw.githubusercontent.com/urikalish/arduino-projects/master/projects/work/lessons/lesson04/ButtonPullupInterrupt.ino)
 
 ## Lesson #5 - Climate Sensor - 07/04/19
 * Power options
 * Relay - connecting to 230v circuits
 * Installing external libraries
-* Workshop - Climate Sensor - [Circuit](https://raw.githubusercontent.com/urikalish/arduino-projects/master/Lessons/Lesson05/ClimateSensor.png) | [Code](https://raw.githubusercontent.com/urikalish/arduino-projects/master/Lessons/Lesson05/ClimateSensor.ino)
+* Workshop - Climate Sensor - [Circuit](https://raw.githubusercontent.com/urikalish/arduino-projects/master/projects/work/lessons/lesson05/ClimateSensor.png) | [Code](https://raw.githubusercontent.com/urikalish/arduino-projects/master/projects/work/lessons/lesson05/ClimateSensor.ino)
